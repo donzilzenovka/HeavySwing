@@ -1,14 +1,19 @@
 package com.drzenovka.heavyswing;
 
-import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import cpw.mods.fml.common.gameevent.TickEvent;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemAxe;
+import net.minecraft.item.ItemHoe;
 import net.minecraft.item.ItemPickaxe;
+import net.minecraft.item.ItemSpade;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemSword;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.world.World;
+
+import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.gameevent.TickEvent;
 
 public class HeavySwingHandler {
 
@@ -27,7 +32,23 @@ public class HeavySwingHandler {
         EntityPlayer player = mc.thePlayer;
         ItemStack held = player.getHeldItem();
 
-        if (held == null || !(held.getItem() instanceof ItemPickaxe)) {
+        if (held == null) {
+            clickPending = false;
+            localSwingTick = 0;
+            strikeSoundPlayed = false;
+            return;
+        }
+
+        Class<?>[] allowedClasses = { ItemPickaxe.class, ItemAxe.class, ItemHoe.class, ItemSword.class, ItemSpade.class };
+        boolean valid = false;
+        for (Class<?> clazz : allowedClasses) {
+            if (clazz.isInstance(held.getItem())) {
+                valid = true;
+                break;
+            }
+        }
+
+        if (!valid) {
             clickPending = false;
             localSwingTick = 0;
             strikeSoundPlayed = false;
@@ -55,7 +76,7 @@ public class HeavySwingHandler {
                 progress = localSwingTick / 3f * 0.25f;
             } else if (localSwingTick <= maxSwingTicks) {
                 // Slow follow-through (0.25–1.0)
-                progress = 0.25f + (localSwingTick - 3) / (float)(maxSwingTicks - 3) * 0.75f;
+                progress = 0.25f + (localSwingTick - 3) / (float) (maxSwingTicks - 3) * 0.75f;
             } else {
                 // Swing finished
                 progress = 0f;

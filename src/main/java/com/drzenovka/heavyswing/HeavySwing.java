@@ -17,7 +17,9 @@ public class HeavySwing {
     public static final String MODID = "heavyswing";
     public static final Logger LOG = LogManager.getLogger(MODID);
 
-    @SidedProxy(clientSide = "com.drzenovka.heavyswing.client.ClientProxy", serverSide = "com.drzenovka.heavyswing.CommonProxy")
+    @SidedProxy(
+        clientSide = "com.drzenovka.heavyswing.client.ClientProxy",
+        serverSide = "com.drzenovka.heavyswing.CommonProxy")
     public static CommonProxy proxy;
 
     @Mod.EventHandler
