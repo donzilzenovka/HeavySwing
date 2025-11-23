@@ -2,7 +2,6 @@ package com.drzenovka.heavyswing.client.audio;
 
 import com.drzenovka.heavyswing.handler.HeavySwingHandler;
 import net.minecraft.block.Block;
-import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.ISound;
 import net.minecraft.client.audio.PositionedSound;
@@ -12,7 +11,6 @@ import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.settings.GameSettings;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.ResourceLocation;
-// Removed unused import net.minecraft.util.Vec3
 
 import com.drzenovka.heavyswing.common.HeavySwing;
 
@@ -93,8 +91,10 @@ public class HeavySwingSoundHandler extends SoundHandler {
      */
     @Override
     public void playSound(ISound sound) {
-        boolean markUnplayable = false;
         final Minecraft mc = Minecraft.getMinecraft();
+        boolean inNether = mc.theWorld != null && mc.theWorld.provider.dimensionId == -1;
+        boolean markUnplayable = false;
+
         if (sound == null) {
             super.playSound(null);
             return;
@@ -128,7 +128,9 @@ public class HeavySwingSoundHandler extends SoundHandler {
                 * occlusionFactor
                 * underwaterFactor;
 
+
             logVolumeData = ("distance:" + distanceFactor + ", occulsion: " + occlusionFactor + ", underwater: " + underwaterFactor);
+
 
             setSoundVolume(ps, finalVolume);
             if (finalVolume < 0.08f && !mc.thePlayer.isInsideOfMaterial(net.minecraft.block.material.Material.air)) markUnplayable = true;
@@ -138,6 +140,8 @@ public class HeavySwingSoundHandler extends SoundHandler {
             float finalPitch;
             if(!mc.thePlayer.isInsideOfMaterial(net.minecraft.block.material.Material.air)){
                 finalPitch = ps.getPitch() - (0.9f);
+            } else if(inNether) {
+                finalPitch = 0.1f;
             } else {
                 finalPitch = ps.getPitch() - (distanceFactor < 1f ? (0.2f * (1f - distanceFactor)) : 0f);
             }
@@ -156,7 +160,7 @@ public class HeavySwingSoundHandler extends SoundHandler {
                     // skip playing this sound
                     markUnplayable = true;
                 }
-            } else if (name.startsWith("game.player.hurt")){
+            } else if (name.startsWith("game.player.hurt") || (name.startsWith("portal.portal"))){
                 setSoundVolume(ps, ps.getVolume());
                 setSoundPitch(ps, ps.getPitch());
                 markUnplayable = false;
