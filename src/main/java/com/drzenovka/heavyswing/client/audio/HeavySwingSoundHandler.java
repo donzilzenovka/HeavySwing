@@ -1,6 +1,7 @@
 package com.drzenovka.heavyswing.client.audio;
 
 import com.drzenovka.heavyswing.handler.HeavySwingHandler;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.ISound;
 import net.minecraft.client.audio.PositionedSound;
 import net.minecraft.client.audio.SoundHandler;
@@ -13,6 +14,8 @@ import net.minecraft.util.ResourceLocation;
 import com.drzenovka.heavyswing.common.HeavySwing;
 
 import cpw.mods.fml.relauncher.ReflectionHelper;
+
+import java.lang.reflect.Field;
 
 /**
  * SoundHandler wrapper that intercepts all sound requests.
@@ -85,6 +88,7 @@ public class HeavySwingSoundHandler extends SoundHandler {
      */
     @Override
     public void playSound(ISound sound) {
+        final Minecraft mc = Minecraft.getMinecraft();
         if (sound == null) {
             super.playSound(null);
             return;
@@ -95,11 +99,26 @@ public class HeavySwingSoundHandler extends SoundHandler {
         String logMessage = "[HeavySwing Intercept] Sound: " + soundLocation.getResourcePath();
 
         // Check if sound is positional and log details
-        if (sound instanceof PositionedSound) {
+        if (mc.thePlayer != null && sound instanceof PositionedSound) {
+
             PositionedSound ps = (PositionedSound) sound;
 
-            String name = ps.getPositionedSoundLocation().getResourcePath();
+            double sx = ps.getXPosF();
+            double sy = ps.getYPosF();
+            double sz = ps.getZPosF();
 
+            double px = mc.thePlayer.posX;
+            double py = mc.thePlayer.posY;
+            double pz = mc.thePlayer.posZ;
+
+            float distanceFactor = getDistanceVolume(sx, sy, sz, px, py, pz);
+            if (distanceFactor <= 0f) return; // skip inaudible sounds
+
+            float finalVolume = ps.getVolume() * distanceFactor;
+            setSoundVolume(ps, finalVolume);
+
+
+            String name = ps.getPositionedSoundLocation().getResourcePath();
             // If we're in a swing, block step sounds
             if (name.startsWith("step.") && HeavySwingHandler.isStepBlocked((name))) {
                 if (HeavySwingHandler.isSwingActive()) {
@@ -124,5 +143,29 @@ public class HeavySwingSoundHandler extends SoundHandler {
 
         // Forward the call to the original sound handler (which now uses the injected, running SoundManager)
         super.playSound(sound);
+    }
+
+    private float getDistanceVolume(double soundX, double soundY, double soundZ, double listenerX, double listenerY, double listenerZ) {
+        double dx = soundX - listenerX;
+        double dy = soundY - listenerY;
+        double dz = soundZ - listenerZ;
+        double distanceSq = dx*dx + dy*dy + dz*dz;
+
+        double maxDistance = 16.0; // blocks, adjust as needed
+        if (distanceSq > maxDistance * maxDistance) return 0f;
+
+        // Simple linear attenuation
+        float factor = 1.0f - (float)(Math.sqrt(distanceSq) / maxDistance);
+        return Math.max(factor, 0f);
+    }
+
+    public static void setSoundVolume(PositionedSound sound, float volume) {
+        try {
+            Field volumeField = PositionedSound.class.getDeclaredField("volume");
+            volumeField.setAccessible(true);
+            volumeField.setFloat(sound, volume);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

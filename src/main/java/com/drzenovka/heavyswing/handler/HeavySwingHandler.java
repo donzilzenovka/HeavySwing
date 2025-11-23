@@ -105,11 +105,16 @@ public class HeavySwingHandler {
                     if (block != null) {
                         activeStepPrefix = "step." + block.stepSound.soundName;
                         // Get block's step sound
-                        float volume = block.stepSound.getVolume();
+
+                        double px = player.posX;
+                        double py = player.posY;
+                        double pz = player.posZ;
+                        //float volume = block.stepSound.getVolume();
+                        float attenuatedVolume = getDistanceVolume(x + 0.5, y + 0.5, z + 0.5, px, py, pz) * block.stepSound.getVolume();
                         float pitch = block.stepSound.getPitch();
 
                         // Play sound at player's position
-                        player.playSound(block.stepSound.getBreakSound(), volume, pitch);
+                        player.playSound(block.stepSound.getBreakSound(), attenuatedVolume, pitch);
                     }
                 }
                 strikeSoundPlayed = true;
@@ -128,6 +133,20 @@ public class HeavySwingHandler {
     public static boolean isStepBlocked(String stepSound) {
         if (activeStepPrefix == null) return false;
         return stepSound.startsWith(activeStepPrefix);
+    }
+
+    private float getDistanceVolume(double soundX, double soundY, double soundZ, double listenerX, double listenerY, double listenerZ) {
+        double dx = soundX - listenerX;
+        double dy = soundY - listenerY;
+        double dz = soundZ - listenerZ;
+        double distanceSq = dx*dx + dy*dy + dz*dz;
+
+        double maxDistance = 8.0; // blocks, adjust as needed
+        if (distanceSq > maxDistance * maxDistance) return 0f;
+
+        // Simple linear attenuation
+        float factor = 1.0f - (float)(Math.sqrt(distanceSq) / maxDistance);
+        return Math.max(factor, 0f);
     }
 
 }
