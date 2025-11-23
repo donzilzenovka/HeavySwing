@@ -8,7 +8,6 @@ import net.minecraft.item.ItemHoe;
 import net.minecraft.item.ItemPickaxe;
 import net.minecraft.item.ItemSpade;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemSword;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.world.World;
 
@@ -40,8 +39,7 @@ public class HeavySwingHandler {
             return;
         }
 
-        Class<?>[] allowedClasses = { ItemPickaxe.class, ItemAxe.class, ItemHoe.class, ItemSword.class,
-            ItemSpade.class };
+        Class<?>[] allowedClasses = { ItemPickaxe.class, ItemAxe.class, ItemHoe.class, ItemSpade.class };
         boolean valid = false;
         for (Class<?> clazz : allowedClasses) {
             if (clazz.isInstance(held.getItem())) {
