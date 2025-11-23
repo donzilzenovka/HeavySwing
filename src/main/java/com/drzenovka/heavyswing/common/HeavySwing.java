@@ -1,7 +1,9 @@
-package com.drzenovka.heavyswing;
+package com.drzenovka.heavyswing.common;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import com.drzenovka.heavyswing.Tags;
 
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.SidedProxy;
@@ -19,7 +21,8 @@ public class HeavySwing {
 
     @SidedProxy(
         clientSide = "com.drzenovka.heavyswing.client.ClientProxy",
-        serverSide = "com.drzenovka.heavyswing.CommonProxy")
+        // CORRECTED: Added 'common.' to the serverSide path
+        serverSide = "com.drzenovka.heavyswing.common.CommonProxy")
     public static CommonProxy proxy;
 
     @Mod.EventHandler

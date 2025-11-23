@@ -1,4 +1,4 @@
-package com.drzenovka.heavyswing;
+package com.drzenovka.heavyswing.handler;
 
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
@@ -20,7 +20,7 @@ public class HeavySwingHandler {
     private final Minecraft mc = Minecraft.getMinecraft();
 
     private boolean clickPending = false;
-    private int localSwingTick = 0;
+    private static int localSwingTick = 0;
     private boolean strikeSoundPlayed = false;
 
     @SubscribeEvent
@@ -39,7 +39,8 @@ public class HeavySwingHandler {
             return;
         }
 
-        Class<?>[] allowedClasses = { ItemPickaxe.class, ItemAxe.class, ItemHoe.class, ItemSword.class, ItemSpade.class };
+        Class<?>[] allowedClasses = { ItemPickaxe.class, ItemAxe.class, ItemHoe.class, ItemSword.class,
+            ItemSpade.class };
         boolean valid = false;
         for (Class<?> clazz : allowedClasses) {
             if (clazz.isInstance(held.getItem())) {
@@ -113,4 +114,9 @@ public class HeavySwingHandler {
             }
         }
     }
+
+    public static boolean isSwingActive() {
+        return localSwingTick > 0;
+    }
+
 }
