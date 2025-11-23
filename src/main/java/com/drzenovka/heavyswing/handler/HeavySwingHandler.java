@@ -18,6 +18,7 @@ import cpw.mods.fml.common.gameevent.TickEvent;
 public class HeavySwingHandler {
 
     private final Minecraft mc = Minecraft.getMinecraft();
+    private static String activeStepPrefix = null;
 
     private boolean clickPending = false;
     private static int localSwingTick = 0;
@@ -102,6 +103,7 @@ public class HeavySwingHandler {
 
                     Block block = world.getBlock(x, y, z);
                     if (block != null) {
+                        activeStepPrefix = "step." + block.stepSound.soundName;
                         // Get block's step sound
                         float volume = block.stepSound.getVolume();
                         float pitch = block.stepSound.getPitch();
@@ -113,10 +115,19 @@ public class HeavySwingHandler {
                 strikeSoundPlayed = true;
             }
         }
+        // At the end of swing (reset)
+        if (localSwingTick == 0) {
+            activeStepPrefix = null;
+        }
     }
 
     public static boolean isSwingActive() {
         return localSwingTick > 0;
+    }
+
+    public static boolean isStepBlocked(String stepSound) {
+        if (activeStepPrefix == null) return false;
+        return stepSound.startsWith(activeStepPrefix);
     }
 
 }

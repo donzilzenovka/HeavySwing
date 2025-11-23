@@ -101,7 +101,7 @@ public class HeavySwingSoundHandler extends SoundHandler {
             String name = ps.getPositionedSoundLocation().getResourcePath();
 
             // If we're in a swing, block step sounds
-            if (name.startsWith("step.")) {
+            if (name.startsWith("step.") && HeavySwingHandler.isStepBlocked((name))) {
                 if (HeavySwingHandler.isSwingActive()) {
                     // skip playing this sound
                     return;
