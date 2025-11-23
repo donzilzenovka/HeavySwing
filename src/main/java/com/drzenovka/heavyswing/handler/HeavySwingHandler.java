@@ -91,7 +91,7 @@ public class HeavySwingHandler {
 
             if (!strikeSoundPlayed && localSwingTick == 3) { // second tick = impact
                 World world = player.worldObj;
-                double reach = 5.0D; // normal player reach
+                double reach = 4.5D; // normal player reach
                 MovingObjectPosition mop = player.rayTrace(reach, 1.0F);
 
                 if (mop != null && mop.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK) {

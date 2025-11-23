@@ -5,6 +5,7 @@ import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.ISound;
 import net.minecraft.client.audio.PositionedSound;
+import net.minecraft.client.audio.PositionedSoundRecord;
 import net.minecraft.client.audio.SoundHandler;
 import net.minecraft.client.audio.SoundManager;
 import net.minecraft.client.resources.IResourceManager;
@@ -108,6 +109,9 @@ public class HeavySwingSoundHandler extends SoundHandler {
         // Check if sound is positional and log details
         if (mc.thePlayer != null && sound instanceof PositionedSound ps) {
 
+            float psDefaultVolume = ps.getVolume();
+            float psDefaultPitch = ps.getPitch();
+
             double sx = ps.getXPosF();
             double sy = ps.getYPosF();
             double sz = ps.getZPosF();
@@ -128,20 +132,16 @@ public class HeavySwingSoundHandler extends SoundHandler {
                 * occlusionFactor
                 * underwaterFactor;
 
-
             logVolumeData = ("distance:" + distanceFactor + ", occulsion: " + occlusionFactor + ", underwater: " + underwaterFactor);
 
-
             setSoundVolume(ps, finalVolume);
-            if (finalVolume < 0.08f && !mc.thePlayer.isInsideOfMaterial(net.minecraft.block.material.Material.air)) markUnplayable = true;
+            //if (finalVolume < 0.01f && !mc.thePlayer.isInsideOfMaterial(net.minecraft.block.material.Material.air)) markUnplayable = true;
 
             //float finalPitch = ps.getPitch() - (distanceFactor < 1f ? (0.5f * (1f - distanceFactor)) : 0f);
 
             float finalPitch;
             if(!mc.thePlayer.isInsideOfMaterial(net.minecraft.block.material.Material.air)){
                 finalPitch = ps.getPitch() - (0.9f);
-            } else if(inNether) {
-                finalPitch = 0.1f;
             } else {
                 finalPitch = ps.getPitch() - (distanceFactor < 1f ? (0.2f * (1f - distanceFactor)) : 0f);
             }
@@ -160,11 +160,16 @@ public class HeavySwingSoundHandler extends SoundHandler {
                     // skip playing this sound
                     markUnplayable = true;
                 }
-            } else if (name.startsWith("game.player.hurt") || (name.startsWith("portal.portal"))){
-                setSoundVolume(ps, ps.getVolume());
-                setSoundPitch(ps, ps.getPitch());
+            } else if (name.startsWith("game.player.hurt")
+                    || (name.startsWith("portal.portal"))
+                    || (name.startsWith("gui.button.press"))){
+                setSoundVolume(ps, psDefaultVolume);
+                setSoundPitch(ps, psDefaultPitch);
                 markUnplayable = false;
-            } // play system sounds
+            } else if (inNether){
+                setSoundVolume(ps, ps.getVolume() - 0.3f);
+                setSoundPitch(ps, ps.getPitch() - 0.5f);
+            }
 
             logMessage += String.format(
                 " @ Pos(%.2f, %.2f, %.2f), Vol: %.2f, Pitch: %.2f",
@@ -185,9 +190,12 @@ public class HeavySwingSoundHandler extends SoundHandler {
             HeavySwing.LOG.info(logVolumeData);
         }
 
+
         // Forward the call to the original sound handler (which now uses the injected, running SoundManager)
         if(!markUnplayable) {
             super.playSound(sound);
+            applyUnderwaterSounds();
+
         }
     }
     /* Simple linear
@@ -281,15 +289,18 @@ public class HeavySwingSoundHandler extends SoundHandler {
                 counted.add(key);
             }
 
-            if (solidCount > 5) break;
+            if (solidCount > 6) break;
         }
+        solidCount = Math.max(0, solidCount - 1);
 
-        if (solidCount == 0) return 1f;
-        if (solidCount == 1) return 0.45f;
-        if (solidCount == 2) return 0.25f;
-        if (solidCount == 3) return 0.15f;
-        if (solidCount == 4) return 0.05f;
-        return 0.00f;
+        switch (solidCount) {
+            case 0: return 1.00f; // open
+            case 1: return 0.55f; // single obstruction
+            case 2: return 0.35f; // muffled
+            case 3: return 0.15f; // strongly occluded
+            case 4: return 0.05f; // almost silent
+            default: return 0.00f; // fully blocked
+        }
     }
 
 
@@ -319,5 +330,36 @@ public class HeavySwingSoundHandler extends SoundHandler {
         net.minecraft.block.Block block = mc.theWorld.getBlock(bx, by, bz);
         return block == blockToCheck;
     }
+
+    private void applyUnderwaterSounds() {
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.thePlayer == null || mc.theWorld == null) return;
+
+        boolean playerUnderwater = mc.thePlayer.isInsideOfMaterial(net.minecraft.block.material.Material.water);
+        if (!playerUnderwater) return;
+
+        long worldTime = mc.theWorld.getTotalWorldTime();
+
+        // Looping underwater ambience (low volume)
+        if (worldTime % 20 == 0) { // roughly once per second
+            ISound ambientLoop = PositionedSoundRecord.func_147673_a(
+                new ResourceLocation("ambient.swim.loop"));
+            super.playSound(ambientLoop);
+        }
+
+        /*
+        // Random bubbles
+        if (worldTime % 40 == 0) { // roughly once every 2 seconds
+            float pitch = 0.9f + mc.theWorld.rand.nextFloat() * 0.2f; // 0.9–1.1
+            float volume = 0.1f + mc.theWorld.rand.nextFloat() * 0.15f; // 0.1–0.25
+            PositionedSound bubble = PositionedSoundRecord.func_147673_a(
+                new ResourceLocation("random.splash"));
+            setSoundPitch(bubble, pitch);
+            super.playSound(bubble);
+        }
+
+         */
+    }
+
 
 }
