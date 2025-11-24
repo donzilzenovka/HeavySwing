@@ -1,0 +1,9 @@
+{
+	"underwater_ambience": {
+		"category": "player",
+		"subtitle": "underwater ambience",
+		"sounds": [
+		{ "name": "underwater_ambience", "volume":1.0, "pitch": 1.0}
+		]
+	}
+}

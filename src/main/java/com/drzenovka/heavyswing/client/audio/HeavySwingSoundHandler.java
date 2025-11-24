@@ -5,7 +5,6 @@ import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.ISound;
 import net.minecraft.client.audio.PositionedSound;
-import net.minecraft.client.audio.PositionedSoundRecord;
 import net.minecraft.client.audio.SoundHandler;
 import net.minecraft.client.audio.SoundManager;
 import net.minecraft.client.resources.IResourceManager;
@@ -27,7 +26,13 @@ import java.util.Set;
  * with the original, running SoundManager instance from Minecraft.
  */
 public class HeavySwingSoundHandler extends SoundHandler {
-    boolean logDebug = true;
+    boolean logDebug = false;
+
+    // --- New Fields for Occlusion Cache ---
+    private Long lastOcclusionCheckTime = 0L;
+    private float cachedOcclusionFactor = 1.0f;
+    private static final long OCCLUSION_CACHE_DURATION_MS = 50; // Check every 50ms (every 1-2 ticks)
+
     /**
      * Constructor performs the necessary reflection and substitution.
      */
@@ -57,6 +62,7 @@ public class HeavySwingSoundHandler extends SoundHandler {
     }
 
     // --- Helper methods to fetch constructor arguments (using verified names) ---
+
 
     private static IResourceManager getResourceManager(SoundHandler handler) {
         // Names: "mcResourceManager" (MCP), "field_147695_g" (SRG)
@@ -101,8 +107,16 @@ public class HeavySwingSoundHandler extends SoundHandler {
             return;
         }
 
+
+
         // Perform logging
         ResourceLocation soundLocation = sound.getPositionedSoundLocation();
+
+        if ("heavyswing:underwater".equals(soundLocation.getResourcePath())) {
+            super.playSound(sound);
+            return; // Bypasses all volume/pitch/occlusion modifications
+        }
+
         String logMessage = "[HeavySwing Intercept] Sound: " + soundLocation.getResourcePath();
         String logVolumeData = "";
 
@@ -121,7 +135,8 @@ public class HeavySwingSoundHandler extends SoundHandler {
             double pz = mc.thePlayer.posZ;
 
             float distanceFactor = getDistanceVolume(sx, sy, sz, px, py, pz);
-            float occlusionFactor = getOcclusionFactor(sx, sy, sz, px, py, pz);
+            float occlusionFactor = getOcclusionFactorCached(sx, sy, sz, px, py, pz);
+            //float occlusionFactor = getOcclusionFactor(sx, sy, sz, px, py, pz);
             if (distanceFactor <= 0f) markUnplayable = true; // skip inaudible sounds
 
             float underwaterFactor = 1f;
@@ -140,18 +155,13 @@ public class HeavySwingSoundHandler extends SoundHandler {
             //float finalPitch = ps.getPitch() - (distanceFactor < 1f ? (0.5f * (1f - distanceFactor)) : 0f);
 
             float finalPitch;
-            if(!mc.thePlayer.isInsideOfMaterial(net.minecraft.block.material.Material.air)){
+            if(mc.thePlayer.isInsideOfMaterial(net.minecraft.block.material.Material.water)){
                 finalPitch = ps.getPitch() - (0.9f);
             } else {
                 finalPitch = ps.getPitch() - (distanceFactor < 1f ? (0.2f * (1f - distanceFactor)) : 0f);
             }
 
             setSoundPitch(ps, finalPitch);
-
-            //if (occlusionFactor < 1f) {
-            //    float finalPitch = ps.getPitch() - (0.3f * (1f - occlusionFactor));
-            //    setSoundPitch(ps, finalPitch);
-            //}
 
             String name = ps.getPositionedSoundLocation().getResourcePath();
             // If we're in a swing, block step sounds
@@ -162,7 +172,9 @@ public class HeavySwingSoundHandler extends SoundHandler {
                 }
             } else if (name.startsWith("game.player.hurt")
                     || (name.startsWith("portal.portal"))
-                    || (name.startsWith("gui.button.press"))){
+                    || (name.startsWith("gui.button.press"))
+                    || (name.startsWith("game.player.swim"))
+                    || (name.startsWith("underwater_ambience"))){
                 setSoundVolume(ps, psDefaultVolume);
                 setSoundPitch(ps, psDefaultPitch);
                 markUnplayable = false;
@@ -194,26 +206,10 @@ public class HeavySwingSoundHandler extends SoundHandler {
         // Forward the call to the original sound handler (which now uses the injected, running SoundManager)
         if(!markUnplayable) {
             super.playSound(sound);
-            applyUnderwaterSounds();
 
         }
     }
-    /* Simple linear
-    private float getDistanceVolume(double soundX, double soundY, double soundZ, double listenerX, double listenerY, double listenerZ) {
-        double dx = soundX - listenerX;
-        double dy = soundY - listenerY;
-        double dz = soundZ - listenerZ;
-        double distanceSq = dx*dx + dy*dy + dz*dz;
 
-        double maxDistance = 12.0; // blocks, adjust as needed
-        if (distanceSq > maxDistance * maxDistance) return 0f;
-
-        // Simple linear attenuation
-        float factor = 1.0f - (float)(Math.sqrt(distanceSq) / maxDistance);
-        return Math.max(factor, 0f);
-    }
-
-     */
     //Improved inverse square
     private float getDistanceVolume(double sx, double sy, double sz, double px, double py, double pz) {
 
@@ -235,7 +231,6 @@ public class HeavySwingSoundHandler extends SoundHandler {
         return (float)Math.max(attenuation, 0f);
     }
 
-
     public static void setSoundVolume(PositionedSound sound, float volume) {
         try {
             Field volumeField = PositionedSound.class.getDeclaredField("volume");
@@ -255,6 +250,21 @@ public class HeavySwingSoundHandler extends SoundHandler {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private float getOcclusionFactorCached(double sx, double sy, double sz, double px, double py, double pz) {
+        long currentTime = System.currentTimeMillis();
+
+        // If the cache is fresh, return the last computed value
+        if (currentTime - lastOcclusionCheckTime < OCCLUSION_CACHE_DURATION_MS) {
+            return cachedOcclusionFactor;
+        }
+
+        // Cache expired, re-calculate
+        cachedOcclusionFactor = getOcclusionFactor(sx, sy, sz, px, py, pz);
+        lastOcclusionCheckTime = currentTime;
+
+        return cachedOcclusionFactor;
     }
 
     private float getOcclusionFactor(double sx, double sy, double sz, double px, double py, double pz) {
@@ -293,33 +303,31 @@ public class HeavySwingSoundHandler extends SoundHandler {
         }
         solidCount = Math.max(0, solidCount - 1);
 
-        switch (solidCount) {
-            case 0: return 1.00f; // open
-            case 1: return 0.55f; // single obstruction
-            case 2: return 0.35f; // muffled
-            case 3: return 0.15f; // strongly occluded
-            case 4: return 0.05f; // almost silent
-            default: return 0.00f; // fully blocked
-        }
+        return switch (solidCount) {
+            case 0 -> 1.00f; // open
+            case 1 -> 0.55f; // single obstruction
+            case 2 -> 0.35f; // muffled
+            case 3 -> 0.15f; // strongly occluded
+            case 4 -> 0.05f; // almost silent
+            default -> 0.00f; // fully blocked
+        };
     }
-
-
-
 
     private float getSubmergedVolumeFactor(PositionedSound ps) {
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.theWorld == null || mc.thePlayer == null) return 1f;
 
-        boolean sourceInBlock = isInBlock(Blocks.water,ps.getXPosF(), ps.getYPosF() + 1, ps.getZPosF());
-        boolean listenerInWater = !mc.thePlayer.isInsideOfMaterial(net.minecraft.block.material.Material.air);
+        // Simplify listener check to only care about water
+        boolean listenerInWater = mc.thePlayer.isInsideOfMaterial(net.minecraft.block.material.Material.water);
 
-        //System.out.println("Source: " + sourceInBlock + ", Player: " + listenerInWater);
-        if (!sourceInBlock && !listenerInWater) return 1f;
+        // This line is often redundant if listenerInWater is true,
+        // but keep it for completeness if a sound plays from water when the player is outside.
+        boolean sourceInWater = isInBlock(Blocks.water, ps.getXPosF(), ps.getYPosF() + 1, ps.getZPosF());
 
-        // Mimic a low-pass filter by heavily reducing volume
+        if (!sourceInWater && !listenerInWater) return 1f;
+
         return 0.25f;
     }
-
 
     private boolean isInBlock(Block blockToCheck, double x, double y, double z) {
         Minecraft mc = Minecraft.getMinecraft();
@@ -330,36 +338,5 @@ public class HeavySwingSoundHandler extends SoundHandler {
         net.minecraft.block.Block block = mc.theWorld.getBlock(bx, by, bz);
         return block == blockToCheck;
     }
-
-    private void applyUnderwaterSounds() {
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc.thePlayer == null || mc.theWorld == null) return;
-
-        boolean playerUnderwater = mc.thePlayer.isInsideOfMaterial(net.minecraft.block.material.Material.water);
-        if (!playerUnderwater) return;
-
-        long worldTime = mc.theWorld.getTotalWorldTime();
-
-        // Looping underwater ambience (low volume)
-        if (worldTime % 20 == 0) { // roughly once per second
-            ISound ambientLoop = PositionedSoundRecord.func_147673_a(
-                new ResourceLocation("ambient.swim.loop"));
-            super.playSound(ambientLoop);
-        }
-
-        /*
-        // Random bubbles
-        if (worldTime % 40 == 0) { // roughly once every 2 seconds
-            float pitch = 0.9f + mc.theWorld.rand.nextFloat() * 0.2f; // 0.9–1.1
-            float volume = 0.1f + mc.theWorld.rand.nextFloat() * 0.15f; // 0.1–0.25
-            PositionedSound bubble = PositionedSoundRecord.func_147673_a(
-                new ResourceLocation("random.splash"));
-            setSoundPitch(bubble, pitch);
-            super.playSound(bubble);
-        }
-
-         */
-    }
-
 
 }

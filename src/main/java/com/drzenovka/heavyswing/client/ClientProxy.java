@@ -1,7 +1,11 @@
 package com.drzenovka.heavyswing.client;
 
+import com.drzenovka.heavyswing.client.audio.HeavySwingSoundTickHandler;
+import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.gameevent.TickEvent;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.SoundHandler;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.MinecraftForge;
 
 import com.drzenovka.heavyswing.client.audio.HeavySwingSoundHandler;
@@ -39,13 +43,18 @@ public class ClientProxy extends CommonProxy {
             SoundHandler original = ReflectionHelper
                 .getPrivateValue(Minecraft.class, mc, "mcSoundHandler", "field_147126_aw");
 
-            // Wrap it
-            SoundHandler wrapped = new HeavySwingSoundHandler(original);
+            // 1. Create the ONE and ONLY HeavySwingSoundHandler instance
+            HeavySwingSoundHandler wrapped = new HeavySwingSoundHandler(original);
 
-            // Replace the private field
+            // 2. Inject this instance into the Minecraft field
             ReflectionHelper.setPrivateValue(Minecraft.class, mc, wrapped, "mcSoundHandler", "field_147126_aw");
 
-            HeavySwing.LOG.info("[HeavySwing] Injected custom SoundHandler successfully!");
+            // 3. Create and REGISTER the DEDICATED Tick Handler, passing the INJECTED 'wrapped' instance.
+            HeavySwingSoundTickHandler tickHandler = new HeavySwingSoundTickHandler(wrapped); // <-- CORRECTED LINE
+            MinecraftForge.EVENT_BUS.register(tickHandler);
+            FMLCommonHandler.instance().bus().register(tickHandler);
+
+            HeavySwing.LOG.info("[HeavySwing] Injected custom SoundHandler successfully and registered Tick Handler.");
         } catch (Exception e) {
             HeavySwing.LOG.error("[HeavySwing] Failed to inject SoundHandler", e);
         }
