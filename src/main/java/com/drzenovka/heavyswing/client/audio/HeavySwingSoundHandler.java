@@ -185,8 +185,8 @@ public class HeavySwingSoundHandler extends SoundHandler {
                 setSoundPitch(ps, psDefaultPitch);
                 markUnplayable = false;
             }else if (inNether){
-                setSoundVolume(ps, ps.getVolume() - 0.3f);
-                setSoundPitch(ps, ps.getPitch() - 0.5f);
+                setSoundVolume(ps, ps.getVolume() - 0.1f);
+                setSoundPitch(ps, ps.getPitch() - 0.4f);
             }
 
             logMessage += String.format(
