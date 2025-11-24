@@ -72,6 +72,9 @@ public class HeavySwingSoundTickHandler {
                     // Set the shader's initial projection matrix
                     this.underwaterShader.createBindFramebuffers(mc.displayWidth, mc.displayHeight);
                 }
+            } catch (JsonException e) {
+                throw new RuntimeException(e);
+            }
                 // 2. ACTIVATE SHADER via Reflection
                 mc.entityRenderer.theShaderGroup = this.underwaterShader;
 
@@ -86,9 +89,7 @@ public class HeavySwingSoundTickHandler {
                     HeavySwing.LOG.info("[HeavySwing] Starting underwater ambience loop (Dedicated Handler).");
                 }
                 this.playerUnderwaterStatus = true;
-            } catch (JsonException e) {
-                throw new RuntimeException(e);
-            }
+
         }
 
             // --- STOP the sound loop ---
