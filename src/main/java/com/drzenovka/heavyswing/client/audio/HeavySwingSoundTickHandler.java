@@ -73,8 +73,7 @@ public class HeavySwingSoundTickHandler {
                     this.underwaterShader.createBindFramebuffers(mc.displayWidth, mc.displayHeight);
                 }
                 // 2. ACTIVATE SHADER via Reflection
-                Field field = getShaderGroupField();
-                field.set(mc.entityRenderer, this.underwaterShader);
+                mc.entityRenderer.theShaderGroup = this.underwaterShader;
 
                 // 1. Instantiate the custom looping sound if needed
                 //if (this.underwaterLoop == null) {
@@ -87,7 +86,7 @@ public class HeavySwingSoundTickHandler {
                     HeavySwing.LOG.info("[HeavySwing] Starting underwater ambience loop (Dedicated Handler).");
                 }
                 this.playerUnderwaterStatus = true;
-            } catch (JsonException | NoSuchFieldException | IllegalAccessException e) {
+            } catch (JsonException e) {
                 throw new RuntimeException(e);
             }
         }
@@ -99,18 +98,14 @@ public class HeavySwingSoundTickHandler {
                 this.underwaterLoop = null;
             }
                 // 2. REMOVE SHADER via Reflection
-                try {
-                    Field field = getShaderGroupField();
-                    // Set the active shader back to null (disables it)
-                    field.set(mc.entityRenderer, null);
+
+                    mc.entityRenderer.theShaderGroup = null;
 
                     // Note: If you want to be extremely clean, you should call
                     // theShaderGroup.deleteShaderGroup() before setting it to null,
                     // but setting to null often suffices for older vanilla shaders.
 
-                } catch (Exception e) {
-                    HeavySwing.LOG.error("[HeavySwing] Failed to remove shader via reflection.", e);
-                }
+
             HeavySwing.LOG.info("[HeavySwing] Stopping underwater ambience loop (Dedicated Handler).");
             this.playerUnderwaterStatus = false;
         }
