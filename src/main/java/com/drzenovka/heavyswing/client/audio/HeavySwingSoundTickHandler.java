@@ -77,9 +77,9 @@ public class HeavySwingSoundTickHandler {
                 field.set(mc.entityRenderer, this.underwaterShader);
 
                 // 1. Instantiate the custom looping sound if needed
-                if (this.underwaterLoop == null) {
+                //if (this.underwaterLoop == null) {
                     this.underwaterLoop = new LoopingUnderwaterSound();
-                }
+                //}
 
                 // 2. Start the sound
                 if (!sh.isSoundPlaying(this.underwaterLoop)) {
@@ -96,6 +96,7 @@ public class HeavySwingSoundTickHandler {
         else if (!isCurrentlyUnderwater && this.playerUnderwaterStatus) {
             if (this.underwaterLoop != null) {
                 sh.stopSound(this.underwaterLoop);
+                this.underwaterLoop = null;
             }
                 // 2. REMOVE SHADER via Reflection
                 try {
