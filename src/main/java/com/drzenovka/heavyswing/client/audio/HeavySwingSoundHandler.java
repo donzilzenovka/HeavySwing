@@ -26,7 +26,8 @@ import java.util.Set;
  * with the original, running SoundManager instance from Minecraft.
  */
 public class HeavySwingSoundHandler extends SoundHandler {
-    boolean logDebug = false;
+    boolean logDebug = true;
+    boolean noOrigin;
 
     // --- New Fields for Occlusion Cache ---
     private Long lastOcclusionCheckTime = 0L;
@@ -163,6 +164,8 @@ public class HeavySwingSoundHandler extends SoundHandler {
 
             setSoundPitch(ps, finalPitch);
 
+            noOrigin = (ps.getXPosF() == ps.getYPosF() && ps.getYPosF() == ps.getZPosF());
+
             String name = ps.getPositionedSoundLocation().getResourcePath();
             // If we're in a swing, block step sounds
             if (name.startsWith("step.") && HeavySwingHandler.isStepBlocked((name))) {
@@ -172,13 +175,16 @@ public class HeavySwingSoundHandler extends SoundHandler {
                 }
             } else if (name.startsWith("game.player.hurt")
                     || (name.startsWith("portal.portal"))
-                    || (name.startsWith("gui.button.press"))
                     || (name.startsWith("game.player.swim"))
                     || (name.startsWith("underwater_ambience"))){
                 setSoundVolume(ps, psDefaultVolume);
                 setSoundPitch(ps, psDefaultPitch);
                 markUnplayable = false;
-            } else if (inNether){
+            } else if (noOrigin) {
+                setSoundVolume(ps, psDefaultVolume);
+                setSoundPitch(ps, psDefaultPitch);
+                markUnplayable = false;
+            }else if (inNether){
                 setSoundVolume(ps, ps.getVolume() - 0.3f);
                 setSoundPitch(ps, ps.getPitch() - 0.5f);
             }
@@ -196,6 +202,9 @@ public class HeavySwingSoundHandler extends SoundHandler {
         }
         if(markUnplayable){
             logMessage += " (Muted)";
+        }
+        if(noOrigin){
+            logMessage += " (NoOrigin)";
         }
         if (logDebug) {
             HeavySwing.LOG.info(logMessage);

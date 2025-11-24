@@ -2,8 +2,6 @@ package com.drzenovka.heavyswing.handler;
 
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.audio.SoundHandler;
-import net.minecraft.client.audio.SoundRegistry;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemAxe;
 import net.minecraft.item.ItemHoe;
@@ -13,11 +11,10 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
+import net.minecraft.client.audio.PositionedSoundRecord;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
-
-import java.util.Map;
 
 public class HeavySwingHandler {
 
@@ -105,19 +102,36 @@ public class HeavySwingHandler {
                     int z = mop.blockZ;
 
                     Block block = world.getBlock(x, y, z);
+                    // --- LOCATE THIS SECTION (inside the block!=null check) ---
                     if (block != null) {
                         activeStepPrefix = "step." + block.stepSound.soundName;
-                        // Get block's step sound
 
-                        double px = player.posX;
-                        double py = player.posY;
-                        double pz = player.posZ;
-                        //float volume = block.stepSound.getVolume();
-                        float attenuatedVolume = getDistanceVolume(x + 0.5, y + 0.5, z + 0.5, px, py, pz) * block.stepSound.getVolume();
-                        float pitch = block.stepSound.getPitch();
+                        // ... (local variables removed, which is good) ...
+                        // ... (the old player.playSound() line was here) ...
 
-                        // Play sound at player's position
-                        player.playSound(block.stepSound.getBreakSound(), attenuatedVolume, pitch);
+                        // ... REPLACE THE AUDIO CALL WITH THIS ...
+
+                        // 1. Get the raw sound name and default properties from the block's step sound
+                        String soundName = block.stepSound.getBreakSound();
+                        float defaultVolume = block.stepSound.getVolume();
+                        float defaultPitch = block.stepSound.getPitch();
+                        ResourceLocation soundLocation = new ResourceLocation(soundName);
+
+                        // 2. Create the PositionedSoundRecord using the String name.
+                        // This constructor is designed for sounds registered in the SoundRegistry.
+                        PositionedSoundRecord strikeSound = new PositionedSoundRecord(
+                            soundLocation,         // Use the String sound name
+                            defaultVolume,     // Pass default volume
+                            defaultPitch,      // Pass default pitch
+                            (float) (x + 0.5), // Sound source X
+                            (float) (y + 0.5), // Sound source Y
+                            (float) (z + 0.5)  // Sound source Z
+                        );
+
+                        // 3. Output the call to the SoundHandler (your interceptor)
+                        mc.getSoundHandler().playSound(strikeSound);
+
+                        // ... (rest of the code continues) ...
                     }
                 }
                 strikeSoundPlayed = true;

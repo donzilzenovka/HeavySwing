@@ -13,8 +13,8 @@ public class LoopingUnderwaterSound extends PositionedSound implements ISound {
         super(new ResourceLocation("heavyswing:underwater_ambience"));
         this.repeat = true;          // loop
         this.field_147665_h = 0;     // delay between loops
-        this.volume = 0.35F;         // subtle volume
-        this.field_147663_c = 1.0F;  // pitch
+        this.volume = 0.45F;         // subtle volume
+        this.field_147663_c = 0.5F;  // pitch
         this.xPosF = 0.0F;           // positional sound X (can stay 0)
         this.yPosF = 0.0F;           // positional sound Y
         this.zPosF = 0.0F;           // positional sound Z
