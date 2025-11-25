@@ -44,10 +44,13 @@ public class HeavySwingSoundTickHandler {
 
     @SubscribeEvent
     public void onClientTick(TickEvent.ClientTickEvent event) {
+
         if (event.phase != TickEvent.Phase.END) return;
 
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.thePlayer == null || mc.theWorld == null) return;
+
+
 
         // Use the injected handler's reference to the game's SoundHandler
         SoundHandler sh = mc.getSoundHandler();
@@ -57,11 +60,12 @@ public class HeavySwingSoundTickHandler {
 
         // --- START the sound loop ---
         if (isCurrentlyUnderwater && !this.playerUnderwaterStatus) {
-
+            this.playerUnderwaterStatus = true;
             // 1. Load the shader
-            try {
-                // Only load the shader once
-                if (this.underwaterShader == null) {
+            if (this.underwaterShader == mc.entityRenderer.theShaderGroup) {
+                try {
+                    // Only load the shader once
+
                     // The ShaderGroup constructor needs the Resource Manager and the active camera (mc.thePlayer)
                     this.underwaterShader = new ShaderGroup(
                         mc.getTextureManager(),
@@ -71,9 +75,10 @@ public class HeavySwingSoundTickHandler {
                     );
                     // Set the shader's initial projection matrix
                     this.underwaterShader.createBindFramebuffers(mc.displayWidth, mc.displayHeight);
+
+                } catch (JsonException e) {
+                    throw new RuntimeException(e);
                 }
-            } catch (JsonException e) {
-                throw new RuntimeException(e);
             }
                 // 2. ACTIVATE SHADER via Reflection
                 mc.entityRenderer.theShaderGroup = this.underwaterShader;
@@ -88,7 +93,7 @@ public class HeavySwingSoundTickHandler {
                     sh.playSound(this.underwaterLoop);
                     HeavySwing.LOG.info("[HeavySwing] Starting underwater ambience loop (Dedicated Handler).");
                 }
-                this.playerUnderwaterStatus = true;
+
 
         }
 

@@ -149,6 +149,7 @@ public class HeavySwingSoundHandler extends SoundHandler {
                 * underwaterFactor;
 
             logVolumeData = ("distance:" + distanceFactor + ", occulsion: " + occlusionFactor + ", underwater: " + underwaterFactor);
+            if (finalVolume <= 0.0f) markUnplayable = true;
 
             setSoundVolume(ps, finalVolume);
             //if (finalVolume < 0.01f && !mc.thePlayer.isInsideOfMaterial(net.minecraft.block.material.Material.air)) markUnplayable = true;
@@ -175,7 +176,6 @@ public class HeavySwingSoundHandler extends SoundHandler {
                 }
             } else if (name.startsWith("game.player.hurt")
                     || (name.startsWith("portal.portal"))
-                    || (name.startsWith("game.player.swim"))
                     || (name.startsWith("underwater_ambience"))){
                 setSoundVolume(ps, psDefaultVolume);
                 setSoundPitch(ps, psDefaultPitch);
@@ -187,6 +187,12 @@ public class HeavySwingSoundHandler extends SoundHandler {
             }else if (inNether){
                 setSoundVolume(ps, ps.getVolume() - 0.1f);
                 setSoundPitch(ps, ps.getPitch() - 0.4f);
+            }else if (underwaterFactor < 1.0f){
+                if(name.startsWith("game.player.swim")){
+                    setSoundVolume(ps, psDefaultVolume);
+                    setSoundPitch(ps, psDefaultPitch - 0.3f);
+                    markUnplayable = false;
+                }
             }
 
             logMessage += String.format(
