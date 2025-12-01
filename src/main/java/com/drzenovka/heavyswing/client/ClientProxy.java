@@ -17,6 +17,8 @@ import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.relauncher.ReflectionHelper;
 
+import java.lang.reflect.Field;
+
 public class ClientProxy extends CommonProxy {
 
     @Override
@@ -29,8 +31,6 @@ public class ClientProxy extends CommonProxy {
             .bus()
             .register(handler);
 
-        // Changing to a later Forge event for greater stability if needed,
-        // but for now, sticking to init() and trusting the inheritance fix.
         injectSoundHandler();
 
     }
@@ -39,18 +39,22 @@ public class ClientProxy extends CommonProxy {
         try {
             Minecraft mc = Minecraft.getMinecraft();
 
-            // Grab the existing SoundHandler
-            SoundHandler original = ReflectionHelper
-                .getPrivateValue(Minecraft.class, mc, "mcSoundHandler", "field_147126_aw");
+            SoundHandler original = null;
+            Field targetField = null;
 
-            // 1. Create the ONE and ONLY HeavySwingSoundHandler instance
+            for (Field f : Minecraft.class.getDeclaredFields()) {
+                f.setAccessible(true);
+                if (SoundHandler.class.isAssignableFrom(f.getType())) {
+                    original = (SoundHandler) f.get(mc);
+                    targetField = f;
+                    break;
+                }
+            }
             HeavySwingSoundHandler wrapped = new HeavySwingSoundHandler(original);
 
-            // 2. Inject this instance into the Minecraft field
-            ReflectionHelper.setPrivateValue(Minecraft.class, mc, wrapped, "mcSoundHandler", "field_147126_aw");
-
-            // 3. Create and REGISTER the DEDICATED Tick Handler, passing the INJECTED 'wrapped' instance.
+            targetField.set(mc, wrapped);
             HeavySwingSoundTickHandler tickHandler = new HeavySwingSoundTickHandler(wrapped); // <-- CORRECTED LINE
+
             MinecraftForge.EVENT_BUS.register(tickHandler);
             FMLCommonHandler.instance().bus().register(tickHandler);
 
