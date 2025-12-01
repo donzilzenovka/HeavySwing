@@ -32,7 +32,7 @@ public class HeavySwingSoundTickHandler {
         if (mc.thePlayer == null || mc.theWorld == null) return;
 
         boolean isCurrentlyUnderwater = mc.thePlayer.isInsideOfMaterial(net.minecraft.block.material.Material.water);
-        
+
 
         // --- ENTER WATER ---
         if (isCurrentlyUnderwater && underwaterLoop == null) {
