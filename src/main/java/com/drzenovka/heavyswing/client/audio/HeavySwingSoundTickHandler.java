@@ -1,11 +1,12 @@
 package com.drzenovka.heavyswing.client.audio;
 
-import com.drzenovka.heavyswing.common.HeavySwing;
+import com.drzenovka.heavyswing.config.Config;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.ISound;
 import net.minecraft.client.audio.PositionedSound;
+import net.minecraft.client.audio.PositionedSoundRecord;
 import net.minecraft.client.shader.ShaderGroup;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.client.util.JsonException;
@@ -15,6 +16,7 @@ public class HeavySwingSoundTickHandler {
     private final HeavySwingSoundHandler soundHandler;
     private ISound underwaterLoop = null; // Looping sound instance
     private ShaderGroup underwaterShader = null;
+    private static boolean preloaded = false;
     private static final ResourceLocation SHADER_LOCATION =
         new ResourceLocation("minecraft:shaders/post/blobs2.json");
 
@@ -30,12 +32,13 @@ public class HeavySwingSoundTickHandler {
         if (mc.thePlayer == null || mc.theWorld == null) return;
 
         boolean isCurrentlyUnderwater = mc.thePlayer.isInsideOfMaterial(net.minecraft.block.material.Material.water);
+        
 
         // --- ENTER WATER ---
         if (isCurrentlyUnderwater && underwaterLoop == null) {
 
             // Load shader if not already loaded
-            if (underwaterShader == null) {
+            if (underwaterShader == null && Config.enableUnderwaterShader) {
                 try {
                     underwaterShader = new ShaderGroup(
                         mc.getTextureManager(),
@@ -51,11 +54,11 @@ public class HeavySwingSoundTickHandler {
 
             mc.entityRenderer.theShaderGroup = underwaterShader;
 
-            // Create the looping sound and pass it to the sound handler
-            underwaterLoop = new LoopingUnderwaterSound();
-            soundHandler.playExternalSound(underwaterLoop);
-
-            HeavySwing.LOG.info("[HeavySwing] Starting underwater ambience loop.");
+                // Create the looping sound and pass it to the sound handler
+                underwaterLoop = new LoopingUnderwaterSound();
+            if(Config.enableUnderwaterAmbience) {
+                soundHandler.playExternalSound(underwaterLoop);
+            }
         }
 
         // --- EXIT WATER ---
@@ -71,8 +74,6 @@ public class HeavySwingSoundTickHandler {
                 mc.entityRenderer.theShaderGroup = null;
                 underwaterShader = null;
             }
-
-            HeavySwing.LOG.info("[HeavySwing] Stopping underwater ambience loop.");
         }
     }
 

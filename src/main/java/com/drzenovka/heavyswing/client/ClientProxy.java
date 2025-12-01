@@ -1,11 +1,8 @@
 package com.drzenovka.heavyswing.client;
 
 import com.drzenovka.heavyswing.client.audio.HeavySwingSoundTickHandler;
-import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import cpw.mods.fml.common.gameevent.TickEvent;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.SoundHandler;
-import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.MinecraftForge;
 
 import com.drzenovka.heavyswing.client.audio.HeavySwingSoundHandler;
@@ -15,7 +12,6 @@ import com.drzenovka.heavyswing.handler.HeavySwingHandler;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
-import cpw.mods.fml.relauncher.ReflectionHelper;
 
 import java.lang.reflect.Field;
 
@@ -24,7 +20,6 @@ public class ClientProxy extends CommonProxy {
     @Override
     public void init(FMLInitializationEvent event) {
         super.init(event);
-
         HeavySwingHandler handler = new HeavySwingHandler();
         MinecraftForge.EVENT_BUS.register(handler);
         FMLCommonHandler.instance()
@@ -53,7 +48,7 @@ public class ClientProxy extends CommonProxy {
             HeavySwingSoundHandler wrapped = new HeavySwingSoundHandler(original);
 
             targetField.set(mc, wrapped);
-            HeavySwingSoundTickHandler tickHandler = new HeavySwingSoundTickHandler(wrapped); // <-- CORRECTED LINE
+            HeavySwingSoundTickHandler tickHandler = new HeavySwingSoundTickHandler(wrapped);
 
             MinecraftForge.EVENT_BUS.register(tickHandler);
             FMLCommonHandler.instance().bus().register(tickHandler);

@@ -1,8 +1,8 @@
 package com.drzenovka.heavyswing.client.audio;
 
+import com.drzenovka.heavyswing.config.Config;
 import com.drzenovka.heavyswing.handler.HeavySwingHandler;
 import com.drzenovka.heavyswing.common.HeavySwing;
-import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.ISound;
 import net.minecraft.client.audio.PositionedSound;
@@ -21,9 +21,6 @@ import java.util.Set;
 public class HeavySwingSoundHandler extends SoundHandler {
     private static final long OCCLUSION_CACHE_DURATION_MS = 50L; // check every ~50ms
 
-    private boolean logDebug = false;
-    private boolean noOrigin;
-
     // Occlusion cache (single value for last check)
     private long lastOcclusionCheckTime = 0L;
     private float cachedOcclusionFactor = 1.0f;
@@ -39,7 +36,7 @@ public class HeavySwingSoundHandler extends SoundHandler {
         }
 
         // Inject running SoundManager into 'this' instance (type-scan on SoundHandler)
-        boolean injected = setPrivateFieldByType(this, SoundManager.class, originalManager);
+        boolean injected = setPrivateFieldByType(this, originalManager);
         if (injected) {
             HeavySwing.LOG.info("SoundManager substitution successful. Audio delegation should now work.");
         } else {
@@ -55,7 +52,7 @@ public class HeavySwingSoundHandler extends SoundHandler {
 
         ISound wrapped = sound; // default: maybe wrap logic here if needed
         if (sound.getPositionedSoundLocation().getResourcePath().startsWith("heavyswing:underwater")) {
-            wrapped = new WrappedSound(sound, 1.0f, 1.0f); // apply volume/pitch as desired
+            wrapped = new WrappedSound(sound, Config.underwaterVolume, 0.8f);
         }
 
         activeExternalSounds.put(sound, wrapped);
@@ -118,10 +115,10 @@ public class HeavySwingSoundHandler extends SoundHandler {
      * Find a private field on 'target' whose type matches 'fieldType' and set it to 'value'.
      * Returns true if successful.
      */
-    private static boolean setPrivateFieldByType(Object target, Class<?> fieldType, Object value) {
+    private static boolean setPrivateFieldByType(Object target, Object value) {
         if (target == null) return false;
         for (Field f : target.getClass().getDeclaredFields()) {
-            if (fieldType.isAssignableFrom(f.getType())) {
+            if (SoundManager.class.isAssignableFrom(f.getType())) {
                 try {
                     f.setAccessible(true);
                     f.set(target, value);
@@ -136,7 +133,7 @@ public class HeavySwingSoundHandler extends SoundHandler {
         Class<?> c = target.getClass().getSuperclass();
         while (c != null) {
             for (Field f : c.getDeclaredFields()) {
-                if (fieldType.isAssignableFrom(f.getType())) {
+                if (SoundManager.class.isAssignableFrom(f.getType())) {
                     try {
                         f.setAccessible(true);
                         f.set(target, value);
@@ -150,31 +147,6 @@ public class HeavySwingSoundHandler extends SoundHandler {
             c = c.getSuperclass();
         }
         return false;
-    }
-
-    /**
-     * Helper to find a private field on 'target' and return it (by type).
-     * Useful when you want the raw Field object (less used now).
-     */
-    private static Field getPrivateFieldObjectByType(Object target, Class<?> type) {
-        if (target == null) return null;
-        for (Field f : target.getClass().getDeclaredFields()) {
-            if (type.isAssignableFrom(f.getType())) {
-                f.setAccessible(true);
-                return f;
-            }
-        }
-        Class<?> c = target.getClass().getSuperclass();
-        while (c != null) {
-            for (Field f : c.getDeclaredFields()) {
-                if (type.isAssignableFrom(f.getType())) {
-                    f.setAccessible(true);
-                    return f;
-                }
-            }
-            c = c.getSuperclass();
-        }
-        return null;
     }
 
     // -------------------- Core interception logic --------------------
@@ -193,6 +165,24 @@ public class HeavySwingSoundHandler extends SoundHandler {
             soundLocation = sound.getPositionedSoundLocation();
         } catch (Throwable ignored) {}
 
+        if (!Config.enableSoundFiltering) {
+
+            // Preserve step-sound suppression
+            if (sound instanceof PositionedSound ps) {
+                String name = ps.getPositionedSoundLocation().getResourcePath();
+                if (name.startsWith("step.") && HeavySwingHandler.isStepBlocked(name)) {
+                    if (HeavySwingHandler.isSwingActive()) {
+                        if (Config.debugMode)
+                            HeavySwing.LOG.info("[HeavySwing] Sound filtering disabled.");
+                        return; // block the sound
+                    }
+                }
+            }
+
+            super.playSound(sound);
+            return;
+        }
+
         // Bypass specific HeavySwing sound entirely
         if (soundLocation != null && "heavyswing:underwater".equals(soundLocation.getResourcePath())) {
             super.playSound(sound);
@@ -200,11 +190,10 @@ public class HeavySwingSoundHandler extends SoundHandler {
         }
 
         boolean markUnplayable = false;
-        String logVolumeData = "";
-        String logMessage = "[HeavySwing Intercept]";
 
         // If we have player + a PositionedSound (positional), compute transforms
         if (mc.thePlayer != null && sound instanceof PositionedSound ps) {
+
             // record defaults
             float psDefaultVolume = safeGetVolume(ps);
             float psDefaultPitch = safeGetPitch(ps);
@@ -233,7 +222,7 @@ public class HeavySwingSoundHandler extends SoundHandler {
                 finalPitch = psDefaultPitch - (distanceFactor < 1f ? (0.2f * (1f - distanceFactor)) : 0f);
             }
 
-            noOrigin = (ps.getXPosF() == ps.getYPosF() && ps.getYPosF() == ps.getZPosF());
+            boolean noOrigin = (ps.getXPosF() == ps.getYPosF() && ps.getYPosF() == ps.getZPosF());
 
             String name = ps.getPositionedSoundLocation().getResourcePath();
 
@@ -265,17 +254,17 @@ public class HeavySwingSoundHandler extends SoundHandler {
                 }
             }
 
-            logMessage = String.format("%s Sound: %s @ Pos(%.2f, %.2f, %.2f), Vol: %.2f -> %.2f, Pitch: %.2f -> %.2f",
+            String logMessage = String.format("%s Sound: %s @ Pos(%.2f, %.2f, %.2f), Vol: %.2f -> %.2f, Pitch: %.2f -> %.2f",
                 "[HeavySwing Intercept]",
                 ps.getPositionedSoundLocation().getResourcePath(),
                 ps.getXPosF(), ps.getYPosF(), ps.getZPosF(),
                 psDefaultVolume, finalVolume,
                 psDefaultPitch, finalPitch);
 
-            logVolumeData = String.format("distance:%.2f, occlusion:%.2f, underwater:%.2f",
+            String logVolumeData = String.format("distance:%.2f, occlusion:%.2f, underwater:%.2f",
                 distanceFactor, occlusionFactor, underwaterFactor);
 
-            if (logDebug) {
+            if (Config.debugMode) {
                 HeavySwing.LOG.info(logMessage);
                 HeavySwing.LOG.info(logVolumeData);
             }
@@ -285,13 +274,13 @@ public class HeavySwingSoundHandler extends SoundHandler {
                 ISound wrapped = new WrappedSound(ps, finalVolume, finalPitch);
                 super.playSound(wrapped);
             } else {
-                if (logDebug) HeavySwing.LOG.info("[HeavySwing] Muted sound: " + ps.getPositionedSoundLocation());
+                if (Config.debugMode) HeavySwing.LOG.info("[HeavySwing] Muted sound: " + ps.getPositionedSoundLocation());
             }
             return;
         }
 
         // Non-positioned or player not present: just forward
-        if (logDebug) {
+        if (Config.debugMode) {
             String name = (soundLocation != null) ? soundLocation.getResourcePath() : sound.getClass().getSimpleName();
             HeavySwing.LOG.info("[HeavySwing Intercept] (Unpositioned) Sound: " + name);
         }
@@ -394,19 +383,19 @@ public class HeavySwingSoundHandler extends SoundHandler {
         if (mc.theWorld == null || mc.thePlayer == null) return 1f;
 
         boolean listenerInWater = mc.thePlayer.isInsideOfMaterial(net.minecraft.block.material.Material.water);
-        boolean sourceInWater = isInBlock(Blocks.water, ps.getXPosF(), ps.getYPosF() + 1, ps.getZPosF());
+        boolean sourceInWater = isInBlock(ps.getXPosF(), ps.getYPosF() + 1, ps.getZPosF());
 
         if (!sourceInWater && !listenerInWater) return 1f;
         return 0.25f;
     }
 
-    private boolean isInBlock(Block blockToCheck, double x, double y, double z) {
+    private boolean isInBlock(double x, double y, double z) {
         Minecraft mc = Minecraft.getMinecraft();
         int bx = (int) Math.floor(x);
         int by = (int) Math.floor(y);
         int bz = (int) Math.floor(z);
         net.minecraft.block.Block block = mc.theWorld.getBlock(bx, by, bz);
-        return block == blockToCheck;
+        return block == Blocks.water;
     }
 
     // -------------------- WrappedSound (no reflection) --------------------
@@ -423,48 +412,30 @@ public class HeavySwingSoundHandler extends SoundHandler {
         }
 
         @Override
-        public ResourceLocation getPositionedSoundLocation() {
-            return original.getPositionedSoundLocation();
-        }
+        public ResourceLocation getPositionedSoundLocation() { return original.getPositionedSoundLocation(); }
 
         @Override
-        public boolean canRepeat() {
-            return original.canRepeat();
-        }
+        public boolean canRepeat() { return original.canRepeat(); }
 
         @Override
-        public int getRepeatDelay() {
-            return original.getRepeatDelay();
-        }
+        public int getRepeatDelay() { return original.getRepeatDelay(); }
 
         @Override
-        public float getVolume() {
-            return wrappedVolume;
-        }
+        public float getVolume() { return wrappedVolume; }
 
         @Override
-        public float getPitch() {
-            return wrappedPitch;
-        }
+        public float getPitch() { return wrappedPitch; }
 
         @Override
-        public float getXPosF() {
-            return original.getXPosF();
-        }
+        public float getXPosF() { return original.getXPosF(); }
 
         @Override
-        public float getYPosF() {
-            return original.getYPosF();
-        }
+        public float getYPosF() { return original.getYPosF(); }
 
         @Override
-        public float getZPosF() {
-            return original.getZPosF();
-        }
+        public float getZPosF() { return original.getZPosF(); }
 
         @Override
-        public AttenuationType getAttenuationType() {
-            return original.getAttenuationType();
-        }
+        public AttenuationType getAttenuationType() { return original.getAttenuationType(); }
     }
 }

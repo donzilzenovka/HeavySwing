@@ -1,5 +1,6 @@
 package com.drzenovka.heavyswing.handler;
 
+import com.drzenovka.heavyswing.config.Config;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
@@ -27,6 +28,7 @@ public class HeavySwingHandler {
 
     @SubscribeEvent
     public void onPlayerTick(TickEvent.PlayerTickEvent event) {
+        if (!Config.enableHeavySwingAnimation) return;
         if (event.phase != TickEvent.Phase.END) return;
         if (!event.player.worldObj.isRemote) return;
         if (mc.thePlayer != event.player) return;
@@ -151,7 +153,7 @@ public class HeavySwingHandler {
         if (activeStepPrefix == null) return false;
         return stepSound.startsWith(activeStepPrefix);
     }
-
+    /*
     private float getDistanceVolume(double soundX, double soundY, double soundZ, double listenerX, double listenerY, double listenerZ) {
         double dx = soundX - listenerX;
         double dy = soundY - listenerY;
@@ -165,5 +167,7 @@ public class HeavySwingHandler {
         float factor = 1.0f - (float)(Math.sqrt(distanceSq) / maxDistance);
         return Math.max(factor, 0f);
     }
+
+     */
 
 }
