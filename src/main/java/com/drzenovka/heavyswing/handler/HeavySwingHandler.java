@@ -1,14 +1,13 @@
 package com.drzenovka.heavyswing.handler;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.PositionedSoundRecord;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemAxe;
-import net.minecraft.item.ItemHoe;
-import net.minecraft.item.ItemPickaxe;
-import net.minecraft.item.ItemSpade;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.ResourceLocation;
@@ -18,9 +17,6 @@ import com.drzenovka.heavyswing.config.Config;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class HeavySwingHandler {
 
@@ -48,23 +44,19 @@ public class HeavySwingHandler {
             return;
         }
 
-        String[] allowedClassNames = {
-            "net.minecraft.item.ItemPickaxe",
-            "net.minecraft.item.ItemAxe",
-            "net.minecraft.item.ItemHoe",
-            "net.minecraft.item.ItemSpade"
-        };
+        String[] allowedClassNames = { "net.minecraft.item.ItemPickaxe", "net.minecraft.item.ItemAxe",
+            "net.minecraft.item.ItemHoe", "net.minecraft.item.ItemSpade" };
 
         Item item = held.getItem();
         List<Class<?>> allowed = new ArrayList<>();
 
-// Load the vanilla tool classes
+        // Load the vanilla tool classes
         for (String name : allowedClassNames) {
             Class<?> cls = tryLoad(name);
             if (cls != null) allowed.add(cls);
         }
 
-// --- MultiItemTool handling ---
+        // --- MultiItemTool handling ---
         Class<?> clsMultiTool = tryLoad("gregapi.item.multiitem.MultiItemTool");
         Class<?> clsToolSword = tryLoad("gregtech.items.tools.early.GT_Tool_Sword");
 
@@ -72,8 +64,7 @@ public class HeavySwingHandler {
 
         if (clsMultiTool != null && clsMultiTool.isInstance(item)) {
             try {
-                Object stats = clsMultiTool
-                    .getMethod("getToolStats", ItemStack.class)
+                Object stats = clsMultiTool.getMethod("getToolStats", ItemStack.class)
                     .invoke(item, held);
 
                 if (stats != null) {
@@ -85,7 +76,7 @@ public class HeavySwingHandler {
             } catch (Throwable ignored) {}
         }
 
-// If not already valid, fall back to plain class checks
+        // If not already valid, fall back to plain class checks
         if (!valid) {
             for (Class<?> clazz : allowed) {
                 if (clazz.isInstance(item)) {
@@ -94,7 +85,6 @@ public class HeavySwingHandler {
                 }
             }
         }
-
 
         if (!valid) {
             clickPending = false;
