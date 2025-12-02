@@ -1,8 +1,8 @@
 package com.drzenovka.heavyswing.handler;
 
-import com.drzenovka.heavyswing.config.Config;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.audio.PositionedSoundRecord;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemAxe;
 import net.minecraft.item.ItemHoe;
@@ -12,7 +12,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
-import net.minecraft.client.audio.PositionedSoundRecord;
+
+import com.drzenovka.heavyswing.config.Config;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
@@ -122,16 +123,17 @@ public class HeavySwingHandler {
                         // 2. Create the PositionedSoundRecord using the String name.
                         // This constructor is designed for sounds registered in the SoundRegistry.
                         PositionedSoundRecord strikeSound = new PositionedSoundRecord(
-                            soundLocation,         // Use the String sound name
-                            defaultVolume,     // Pass default volume
-                            defaultPitch,      // Pass default pitch
+                            soundLocation, // Use the String sound name
+                            defaultVolume, // Pass default volume
+                            defaultPitch, // Pass default pitch
                             (float) (x + 0.5), // Sound source X
                             (float) (y + 0.5), // Sound source Y
-                            (float) (z + 0.5)  // Sound source Z
+                            (float) (z + 0.5) // Sound source Z
                         );
 
                         // 3. Output the call to the SoundHandler (your interceptor)
-                        mc.getSoundHandler().playSound(strikeSound);
+                        mc.getSoundHandler()
+                            .playSound(strikeSound);
 
                         // ... (rest of the code continues) ...
                     }
@@ -154,20 +156,18 @@ public class HeavySwingHandler {
         return stepSound.startsWith(activeStepPrefix);
     }
     /*
-    private float getDistanceVolume(double soundX, double soundY, double soundZ, double listenerX, double listenerY, double listenerZ) {
-        double dx = soundX - listenerX;
-        double dy = soundY - listenerY;
-        double dz = soundZ - listenerZ;
-        double distanceSq = dx*dx + dy*dy + dz*dz;
-
-        double maxDistance = 8.0; // blocks, adjust as needed
-        if (distanceSq > maxDistance * maxDistance) return 0f;
-
-        // Simple linear attenuation
-        float factor = 1.0f - (float)(Math.sqrt(distanceSq) / maxDistance);
-        return Math.max(factor, 0f);
-    }
-
+     * private float getDistanceVolume(double soundX, double soundY, double soundZ, double listenerX, double listenerY,
+     * double listenerZ) {
+     * double dx = soundX - listenerX;
+     * double dy = soundY - listenerY;
+     * double dz = soundZ - listenerZ;
+     * double distanceSq = dx*dx + dy*dy + dz*dz;
+     * double maxDistance = 8.0; // blocks, adjust as needed
+     * if (distanceSq > maxDistance * maxDistance) return 0f;
+     * // Simple linear attenuation
+     * float factor = 1.0f - (float)(Math.sqrt(distanceSq) / maxDistance);
+     * return Math.max(factor, 0f);
+     * }
      */
 
 }

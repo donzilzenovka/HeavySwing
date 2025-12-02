@@ -25,44 +25,34 @@ public class Config {
                 "enableHeavySwingAnimation",
                 "General",
                 enableHeavySwingAnimation,
-                "Toggle heavySwing tool animation on or off."
-            );
+                "Toggle heavySwing tool animation on or off.");
 
             enableSoundFiltering = configuration.getBoolean(
                 "enableHeavySwingSoundFiltering",
                 "General",
                 enableSoundFiltering,
-                "Toggle distance, submersion and occlusion based sound filtering on or off."
-            );
+                "Toggle distance, submersion and occlusion based sound filtering on or off.");
 
-            debugMode = configuration.getBoolean(
-                "debugMode",
-                "General",
-                debugMode,
-                "Enable debug audio logging."
-            );
+            debugMode = configuration.getBoolean("debugMode", "General", debugMode, "Enable debug audio logging.");
 
             enableUnderwaterAmbience = configuration.getBoolean(
                 "enableUnderwaterAmbience",
                 "Sound",
                 enableUnderwaterAmbience,
-                "Enable looping underwater sound."
-            );
+                "Enable looping underwater sound.");
             underwaterVolume = configuration.getFloat(
                 "underwaterVolume",
                 "Sound",
                 underwaterVolume,
                 0.0F,
                 1.0F,
-                "Volume for underwater ambience (0.0 - 1.0)."
-            );
+                "Volume for underwater ambience (0.0 - 1.0).");
 
             enableUnderwaterShader = configuration.getBoolean(
                 "enableUnderwaterShader",
                 "Visual",
                 enableUnderwaterShader,
-                "Enable shader effect when underwater."
-            );
+                "Enable shader effect when underwater.");
         } finally {
             if (configuration.hasChanged()) {
                 configuration.save();

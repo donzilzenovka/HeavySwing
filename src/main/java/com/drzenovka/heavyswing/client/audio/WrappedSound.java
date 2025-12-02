@@ -4,6 +4,7 @@ import net.minecraft.client.audio.ISound;
 import net.minecraft.util.ResourceLocation;
 
 public class WrappedSound implements ISound {
+
     private final ISound original;
     private final float volume;
     private final float pitch;
@@ -31,20 +32,28 @@ public class WrappedSound implements ISound {
 
     @Override
     public float getVolume() {
-        return volume; // << our modified value
+        return volume;
     }
 
     @Override
     public float getPitch() {
-        return pitch; // << our modified value
+        return pitch;
     }
 
     @Override
-    public float getXPosF() { return original.getXPosF(); }
+    public float getXPosF() {
+        return original.getXPosF();
+    }
+
     @Override
-    public float getYPosF() { return original.getYPosF(); }
+    public float getYPosF() {
+        return original.getYPosF();
+    }
+
     @Override
-    public float getZPosF() { return original.getZPosF(); }
+    public float getZPosF() {
+        return original.getZPosF();
+    }
 
     @Override
     public AttenuationType getAttenuationType() {

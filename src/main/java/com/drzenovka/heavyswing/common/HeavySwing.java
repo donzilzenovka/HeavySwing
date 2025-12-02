@@ -3,8 +3,6 @@ package com.drzenovka.heavyswing.common;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.drzenovka.heavyswing.Tags;
-
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.SidedProxy;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
@@ -12,11 +10,16 @@ import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
 
-@Mod(modid = HeavySwing.MODID, version = Tags.VERSION, name = HeavySwing.NAME, acceptedMinecraftVersions = "[1.7.10]")
+@Mod(
+    modid = HeavySwing.MODID,
+    version = HeavySwing.VERSION,
+    name = HeavySwing.NAME,
+    acceptedMinecraftVersions = "[1.7.10]")
 public class HeavySwing {
 
     public static final String NAME = "Heavy Swing";
     public static final String MODID = "heavyswing";
+    public static final String VERSION = "1.0.1";
     public static final Logger LOG = LogManager.getLogger(MODID);
 
     @SidedProxy(

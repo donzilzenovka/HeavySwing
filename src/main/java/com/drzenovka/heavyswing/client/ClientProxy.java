@@ -1,19 +1,19 @@
 package com.drzenovka.heavyswing.client;
 
-import com.drzenovka.heavyswing.client.audio.HeavySwingSoundTickHandler;
+import java.lang.reflect.Field;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.SoundHandler;
 import net.minecraftforge.common.MinecraftForge;
 
 import com.drzenovka.heavyswing.client.audio.HeavySwingSoundHandler;
+import com.drzenovka.heavyswing.client.audio.HeavySwingSoundTickHandler;
 import com.drzenovka.heavyswing.common.CommonProxy;
 import com.drzenovka.heavyswing.common.HeavySwing;
 import com.drzenovka.heavyswing.handler.HeavySwingHandler;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
-
-import java.lang.reflect.Field;
 
 public class ClientProxy extends CommonProxy {
 
@@ -51,7 +51,9 @@ public class ClientProxy extends CommonProxy {
             HeavySwingSoundTickHandler tickHandler = new HeavySwingSoundTickHandler(wrapped);
 
             MinecraftForge.EVENT_BUS.register(tickHandler);
-            FMLCommonHandler.instance().bus().register(tickHandler);
+            FMLCommonHandler.instance()
+                .bus()
+                .register(tickHandler);
 
             HeavySwing.LOG.info("[HeavySwing] Injected custom SoundHandler successfully and registered Tick Handler.");
         } catch (Exception e) {
