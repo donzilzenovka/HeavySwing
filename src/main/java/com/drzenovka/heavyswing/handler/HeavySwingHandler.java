@@ -52,30 +52,49 @@ public class HeavySwingHandler {
             "net.minecraft.item.ItemPickaxe",
             "net.minecraft.item.ItemAxe",
             "net.minecraft.item.ItemHoe",
-            "net.minecraft.item.ItemSpade",
-            "gregapi.item.multiitem.MultiItemTool"
+            "net.minecraft.item.ItemSpade"
         };
 
-        List<Class<?>> classList = new ArrayList<>();
+        Item item = held.getItem();
+        List<Class<?>> allowed = new ArrayList<>();
 
-        for(String name : allowedClassNames) {
-            Class<?> clazz = tryLoad(name);
-            if (clazz != null) {
-                classList.add(clazz);
-            }
+// Load the vanilla tool classes
+        for (String name : allowedClassNames) {
+            Class<?> cls = tryLoad(name);
+            if (cls != null) allowed.add(cls);
         }
 
-        Class<?>[] allowedClasses = classList.toArray(new Class<?>[0]);
+// --- MultiItemTool handling ---
+        Class<?> clsMultiTool = tryLoad("gregapi.item.multiitem.MultiItemTool");
+        Class<?> clsToolSword = tryLoad("gregtech.items.tools.early.GT_Tool_Sword");
 
         boolean valid = false;
 
-        Item item = held.getItem();
-        for (Class<?> clazz : allowedClasses) {
-            if (clazz.isInstance(item)) {
-                valid = true;
-                break;
+        if (clsMultiTool != null && clsMultiTool.isInstance(item)) {
+            try {
+                Object stats = clsMultiTool
+                    .getMethod("getToolStats", ItemStack.class)
+                    .invoke(item, held);
+
+                if (stats != null) {
+                    // Reject GT_Tool_Sword only
+                    if (clsToolSword == null || !clsToolSword.isInstance(stats)) {
+                        valid = true;
+                    }
+                }
+            } catch (Throwable ignored) {}
+        }
+
+// If not already valid, fall back to plain class checks
+        if (!valid) {
+            for (Class<?> clazz : allowed) {
+                if (clazz.isInstance(item)) {
+                    valid = true;
+                    break;
+                }
             }
         }
+
 
         if (!valid) {
             clickPending = false;
