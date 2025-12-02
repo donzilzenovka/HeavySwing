@@ -4,6 +4,7 @@ import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.PositionedSoundRecord;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemAxe;
 import net.minecraft.item.ItemHoe;
 import net.minecraft.item.ItemPickaxe;
@@ -17,6 +18,9 @@ import com.drzenovka.heavyswing.config.Config;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class HeavySwingHandler {
 
@@ -44,10 +48,30 @@ public class HeavySwingHandler {
             return;
         }
 
-        Class<?>[] allowedClasses = { ItemPickaxe.class, ItemAxe.class, ItemHoe.class, ItemSpade.class };
+        String[] allowedClassNames = {
+            "net.minecraft.item.ItemPickaxe",
+            "net.minecraft.item.ItemAxe",
+            "net.minecraft.item.ItemHoe",
+            "net.minecraft.item.ItemSpade",
+            "gregapi.item.multiitem.MultiItemTool"
+        };
+
+        List<Class<?>> classList = new ArrayList<>();
+
+        for(String name : allowedClassNames) {
+            Class<?> clazz = tryLoad(name);
+            if (clazz != null) {
+                classList.add(clazz);
+            }
+        }
+
+        Class<?>[] allowedClasses = classList.toArray(new Class<?>[0]);
+
         boolean valid = false;
+
+        Item item = held.getItem();
         for (Class<?> clazz : allowedClasses) {
-            if (clazz.isInstance(held.getItem())) {
+            if (clazz.isInstance(item)) {
                 valid = true;
                 break;
             }
@@ -155,19 +179,12 @@ public class HeavySwingHandler {
         if (activeStepPrefix == null) return false;
         return stepSound.startsWith(activeStepPrefix);
     }
-    /*
-     * private float getDistanceVolume(double soundX, double soundY, double soundZ, double listenerX, double listenerY,
-     * double listenerZ) {
-     * double dx = soundX - listenerX;
-     * double dy = soundY - listenerY;
-     * double dz = soundZ - listenerZ;
-     * double distanceSq = dx*dx + dy*dy + dz*dz;
-     * double maxDistance = 8.0; // blocks, adjust as needed
-     * if (distanceSq > maxDistance * maxDistance) return 0f;
-     * // Simple linear attenuation
-     * float factor = 1.0f - (float)(Math.sqrt(distanceSq) / maxDistance);
-     * return Math.max(factor, 0f);
-     * }
-     */
 
+    private static Class<?> tryLoad(String name) {
+        try {
+            return Class.forName(name);
+        } catch (Throwable ignored) {
+            return null; // class doesn’t exist in this environment
+        }
+    }
 }
