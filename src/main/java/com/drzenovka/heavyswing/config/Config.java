@@ -14,6 +14,13 @@ public class Config {
     public static float underwaterVolume = 1.0f;
 
     public static boolean enableUnderwaterShader = true;
+    public static boolean enableSwimmingMechanic = true;
+
+    public static String[] heavyArmorKeywords = {
+        "iron",
+        "gold",
+        "diamond"
+    };
 
     public static void synchronizeConfiguration(File configFile) {
         Configuration configuration = new Configuration(configFile);
@@ -53,6 +60,25 @@ public class Config {
                 "Visual",
                 enableUnderwaterShader,
                 "Enable shader effect when underwater.");
+
+            enableSwimmingMechanic = configuration.getBoolean(
+                "enableSwimmingMechanic",
+                "Swim",
+                enableSwimmingMechanic,
+                "Enable ability to float in water (shift to sink or wear heavy armour.");
+
+            heavyArmorKeywords = configuration
+                .get("swim",
+                    "heavyArmorKeywords",
+                    heavyArmorKeywords,
+                    """
+                        Armor name substrings that make the player sink.
+                        Matches unlocalized names and registry names.\s
+                        Example: iron, gold, diamond, steel, lead""")
+                .getStringList();
+
+        } catch (Exception e) {
+            System.out.println("Error loading heavyswing config: " + e);
         } finally {
             if (configuration.hasChanged()) {
                 configuration.save();
