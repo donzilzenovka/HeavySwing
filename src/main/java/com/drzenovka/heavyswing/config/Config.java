@@ -19,7 +19,11 @@ public class Config {
     public static String[] heavyArmorKeywords = {
         "iron",
         "gold",
-        "diamond"
+        "diamond",
+        "steel",
+        "lead",
+        "copper",
+        "bronze"
     };
 
     public static void synchronizeConfiguration(File configFile) {
