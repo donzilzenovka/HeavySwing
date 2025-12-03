@@ -20,6 +20,7 @@ import net.minecraft.util.ResourceLocation;
 import com.drzenovka.heavyswing.common.HeavySwing;
 import com.drzenovka.heavyswing.config.Config;
 import com.drzenovka.heavyswing.handler.HeavySwingHandler;
+import net.minecraft.util.Vec3;
 
 public class HeavySwingSoundHandler extends SoundHandler {
 
@@ -139,10 +140,32 @@ public class HeavySwingSoundHandler extends SoundHandler {
             return;
         }
 
+        // --- Ignore music discs ---
+        String soundClass = sound.getClass().getSimpleName();
+        if (soundClass.contains("MovingSound") || soundClass.contains("Streaming")) {
+            super.playSound(sound);
+            return;
+        }
+
         ResourceLocation soundLocation = null;
         try {
             soundLocation = sound.getPositionedSoundLocation();
         } catch (Throwable ignored) {}
+
+        if (soundLocation != null) {
+            String path = soundLocation.getResourcePath();
+            if (path!= null) {
+                if (path.startsWith("records.") ||
+                path.startsWith("music.") ||
+                path.startsWith("streaming") ||
+                path.startsWith("record.") || path.contains("jukebox")) {
+                    super.playSound(sound);
+                    return;
+                }
+            }
+        }
+
+        // endof --- Ignore music discs ---
 
         if (!Config.enableSoundFiltering) {
 
@@ -186,7 +209,8 @@ public class HeavySwingSoundHandler extends SoundHandler {
             double pz = mc.thePlayer.posZ;
 
             float distanceFactor = getDistanceVolume(sx, sy, sz, px, py, pz);
-            float occlusionFactor = getOcclusionFactorCached(sx, sy, sz, px, py, pz);
+            //float occlusionFactor = getOcclusionFactorCached(sx, sy, sz, px, py, pz);
+            float occlusionFactor = OcclusionCalculator.getOcclusion(Vec3.createVectorHelper(sx,sy,sz), Vec3.createVectorHelper(px,py,pz));
             if (distanceFactor <= 0f) markUnplayable = true;
 
             float underwaterFactor = getSubmergedVolumeFactor(ps);
@@ -196,7 +220,7 @@ public class HeavySwingSoundHandler extends SoundHandler {
 
             float finalPitch;
             if (mc.thePlayer.isInsideOfMaterial(net.minecraft.block.material.Material.water)) {
-                finalPitch = psDefaultPitch - 0.9f;
+                finalPitch = psDefaultPitch - 0.45f;
             } else {
                 finalPitch = psDefaultPitch - (distanceFactor < 1f ? (0.2f * (1f - distanceFactor)) : 0f);
             }
@@ -433,4 +457,6 @@ public class HeavySwingSoundHandler extends SoundHandler {
     }
 
     // -------------- End of hacky fix -----------
+
+
 }
