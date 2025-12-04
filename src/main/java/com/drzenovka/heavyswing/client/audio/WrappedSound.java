@@ -2,12 +2,25 @@ package com.drzenovka.heavyswing.client.audio;
 
 import net.minecraft.client.audio.ISound;
 import net.minecraft.util.ResourceLocation;
+import paulscode.sound.SoundSystemConfig;
+import paulscode.sound.SoundSystemException;
+import paulscode.sound.libraries.LibraryLWJGLOpenAL;
 
 public class WrappedSound implements ISound {
 
     private final ISound original;
     private final float volume;
     private final float pitch;
+
+    private static final Object OPENAL_LOCK = new Object();
+    //attempt to stop second sound instance opening and crashing paulscode
+    public void startSoundSystemSafely() throws SoundSystemException {
+        synchronized (OPENAL_LOCK) {
+            SoundSystemConfig.setNumberNormalChannels(0);
+            SoundSystemConfig.addLibrary(LibraryLWJGLOpenAL.class);
+        }
+    }
+
 
     public WrappedSound(ISound original, float volume, float pitch) {
         this.original = original;
