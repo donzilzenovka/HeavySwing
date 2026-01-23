@@ -1,15 +1,14 @@
 package com.drzenovka.heavyswing.common;
 
-import com.drzenovka.heavyswing.Tags;
-import com.drzenovka.heavyswing.config.Config;
+import net.minecraftforge.common.MinecraftForge;
 
+import com.drzenovka.heavyswing.config.Config;
 import com.drzenovka.heavyswing.handler.SwimHandler;
-import cpw.mods.fml.common.FMLCommonHandler;
+
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
-import net.minecraftforge.common.MinecraftForge;
 
 public class CommonProxy {
 

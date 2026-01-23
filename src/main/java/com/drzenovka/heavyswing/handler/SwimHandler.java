@@ -1,12 +1,14 @@
 package com.drzenovka.heavyswing.handler;
 
-import com.drzenovka.heavyswing.config.Config;
-import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import cpw.mods.fml.common.registry.GameRegistry;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.event.entity.living.LivingEvent.LivingUpdateEvent;
+
+import com.drzenovka.heavyswing.config.Config;
+
+import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.registry.GameRegistry;
 
 public class SwimHandler {
 
@@ -35,13 +37,12 @@ public class SwimHandler {
             // Apply buoyancy ONLY while fully submerged
             if (eyesInWater) {
 
-                double targetSpeed = 0.02;   // gentle upward speed 0.02 + 0.02 neutral buoyancy
-                double accel       = 0.025;   // smooth approach
+                double targetSpeed = 0.02; // gentle upward speed 0.02 + 0.02 neutral buoyancy
+                double accel = 0.025; // smooth approach
 
                 if (player.motionY < targetSpeed) {
                     player.motionY += accel;
-                    if (player.motionY > targetSpeed)
-                        player.motionY = targetSpeed;
+                    if (player.motionY > targetSpeed) player.motionY = targetSpeed;
                 }
             }
             // else: at surface — stop rising
@@ -56,17 +57,19 @@ public class SwimHandler {
             String combined = "";
 
             // Unlocalized name from stack
-            if (stack.getUnlocalizedName() != null)
-                combined += stack.getUnlocalizedName().toLowerCase();
+            if (stack.getUnlocalizedName() != null) combined += stack.getUnlocalizedName()
+                .toLowerCase();
 
             // Unlocalized name from Item
-            if (stack.getItem() != null && stack.getItem().getUnlocalizedName() != null)
-                combined += " " + stack.getItem().getUnlocalizedName().toLowerCase();
+            if (stack.getItem() != null && stack.getItem()
+                .getUnlocalizedName() != null)
+                combined += " " + stack.getItem()
+                    .getUnlocalizedName()
+                    .toLowerCase();
 
             // Registry name
             try {
-                GameRegistry.UniqueIdentifier id =
-                    GameRegistry.findUniqueIdentifierFor(stack.getItem());
+                GameRegistry.UniqueIdentifier id = GameRegistry.findUniqueIdentifierFor(stack.getItem());
                 if (id != null) {
                     combined += " " + (id.modId + ":" + id.name).toLowerCase();
                 }
@@ -82,6 +85,5 @@ public class SwimHandler {
 
         return false;
     }
-
 
 }
