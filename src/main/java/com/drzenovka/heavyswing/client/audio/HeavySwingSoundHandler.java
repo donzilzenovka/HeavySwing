@@ -183,20 +183,16 @@ public class HeavySwingSoundHandler extends SoundHandler {
 
         // endof --- Ignore music discs ---
 
-        if (!Config.enableSoundFiltering) {
+        // Suppress the block's ordinary digging/step sound during a HeavySwing strike,
+        // regardless of whether environmental sound filtering is enabled.
+        // The custom strike uses the block's break sound, so it is unaffected.
+        if (soundLocation != null && HeavySwingHandler.isSwingActive()
+            && HeavySwingHandler.isStepBlocked(soundLocation.getResourcePath())) {
+            if (Config.debugMode) HeavySwing.LOG.info("[HeavySwing] Suppressed original dig sound: " + soundLocation);
+            return;
+        }
 
-            // Preserve step-sound suppression
-            if (sound instanceof PositionedSound) {
-                PositionedSound ps = (PositionedSound) sound;
-                String name = ps.getPositionedSoundLocation()
-                    .getResourcePath();
-                if (HeavySwingHandler.isStepBlocked(name)) {
-                    if (HeavySwingHandler.isSwingActive()) {
-                        if (Config.debugMode) HeavySwing.LOG.info("[HeavySwing] Sound filtering disabled.");
-                        return; // block the sound
-                    }
-                }
-            }
+        if (!Config.enableSoundFiltering) {
 
             super.playSound(sound);
             return;
