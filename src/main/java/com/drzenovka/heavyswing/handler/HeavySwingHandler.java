@@ -186,7 +186,10 @@ public class HeavySwingHandler {
 
     public static boolean isStepBlocked(String stepSound) {
         if (activeStepPrefix == null) return false;
-        return stepSound.equals(activeStepPrefix) || stepSound.endsWith(":" + activeStepPrefix);
+        String expected = activeStepPrefix;
+        int separator = expected.indexOf(':');
+        if (separator >= 0) expected = expected.substring(separator + 1);
+        return stepSound.equals(expected);
     }
 
     private static Class<?> tryLoad(String name) {
