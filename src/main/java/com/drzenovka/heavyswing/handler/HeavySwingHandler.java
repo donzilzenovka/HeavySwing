@@ -140,7 +140,7 @@ public class HeavySwingHandler {
                     Block block = world.getBlock(x, y, z);
                     // --- LOCATE THIS SECTION (inside the block!=null check) ---
                     if (block != null) {
-                        activeStepPrefix = "step." + block.stepSound.soundName;
+                        activeStepPrefix = block.stepSound.getStepResourcePath();
 
                         // ... (local variables removed, which is good) ...
                         // ... (the old player.playSound() line was here) ...
@@ -186,7 +186,10 @@ public class HeavySwingHandler {
 
     public static boolean isStepBlocked(String stepSound) {
         if (activeStepPrefix == null) return false;
-        return stepSound.startsWith(activeStepPrefix);
+        String expected = activeStepPrefix;
+        int separator = expected.indexOf(':');
+        if (separator >= 0) expected = expected.substring(separator + 1);
+        return stepSound.equals(expected);
     }
 
     private static Class<?> tryLoad(String name) {

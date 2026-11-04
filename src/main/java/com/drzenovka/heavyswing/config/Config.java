@@ -63,10 +63,10 @@ public class Config {
                 enableSwimmingMechanic,
                 "Enable ability to float in water (shift to sink or wear heavy armour.");
 
-            heavyArmorKeywords = configuration.get("swim", "heavyArmorKeywords", heavyArmorKeywords, """
-                Armor name substrings that make the player sink.
-                Matches unlocalized names and registry names.\s
-                Example: iron, gold, diamond, steel, lead""")
+            heavyArmorKeywords = configuration.get("swim", "heavyArmorKeywords", heavyArmorKeywords,
+                "Armor name substrings that make the player sink.\\n"
+                    + "Matches unlocalized names and registry names.\\n"
+                    + "Example: iron, gold, diamond, steel, lead")
                 .getStringList();
 
         } catch (Exception e) {

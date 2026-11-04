@@ -8,6 +8,7 @@ import java.util.Set;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.ISound;
+import net.minecraft.client.audio.ITickableSound;
 import net.minecraft.client.audio.PositionedSound;
 import net.minecraft.client.audio.SoundCategory;
 import net.minecraft.client.audio.SoundEventAccessorComposite;
@@ -52,6 +53,20 @@ public class HeavySwingSoundHandler extends SoundHandler {
     }
 
     private final Map<ISound, ISound> activeExternalSounds = new HashMap<>();
+    private final Map<ISound, ISound> wrappedSounds = new java.util.WeakHashMap<>();
+
+    @Override
+    public void stopSound(ISound sound) {
+        ISound wrapped = wrappedSounds.remove(sound);
+        super.stopSound(wrapped != null ? wrapped : sound);
+    }
+
+    @Override
+    public boolean isSoundPlaying(ISound sound) {
+        ISound wrapped = wrappedSounds.get(sound);
+        return super.isSoundPlaying(wrapped != null ? wrapped : sound);
+    }
+
 
     public void playExternalSound(ISound sound, float volume, float pitch) {
         if (activeExternalSounds.containsKey(sound)) return;
@@ -168,19 +183,16 @@ public class HeavySwingSoundHandler extends SoundHandler {
 
         // endof --- Ignore music discs ---
 
-        if (!Config.enableSoundFiltering) {
+        // Suppress the block's ordinary digging/step sound during a HeavySwing strike,
+        // regardless of whether environmental sound filtering is enabled.
+        // The custom strike uses the block's break sound, so it is unaffected.
+        if (soundLocation != null && HeavySwingHandler.isSwingActive()
+            && HeavySwingHandler.isStepBlocked(soundLocation.getResourcePath())) {
+            if (Config.debugMode) HeavySwing.LOG.info("[HeavySwing] Suppressed original dig sound: " + soundLocation);
+            return;
+        }
 
-            // Preserve step-sound suppression
-            if (sound instanceof PositionedSound ps) {
-                String name = ps.getPositionedSoundLocation()
-                    .getResourcePath();
-                if (name.startsWith("step.") && HeavySwingHandler.isStepBlocked(name)) {
-                    if (HeavySwingHandler.isSwingActive()) {
-                        if (Config.debugMode) HeavySwing.LOG.info("[HeavySwing] Sound filtering disabled.");
-                        return; // block the sound
-                    }
-                }
-            }
+        if (!Config.enableSoundFiltering) {
 
             super.playSound(sound);
             return;
@@ -195,7 +207,8 @@ public class HeavySwingSoundHandler extends SoundHandler {
         boolean markUnplayable = false;
 
         // If we have player + a PositionedSound (positional), compute transforms
-        if (mc.thePlayer != null && sound instanceof PositionedSound ps) {
+        if (mc.thePlayer != null && sound instanceof PositionedSound) {
+            PositionedSound ps = (PositionedSound) sound;
 
             // record defaults
             float psDefaultVolume = safeGetVolume(ps);
@@ -286,7 +299,10 @@ public class HeavySwingSoundHandler extends SoundHandler {
 
             if (!markUnplayable) {
                 // wrap the original sound with our custom volume/pitch (no reflection)
-                ISound wrapped = new WrappedSound(ps, finalVolume, finalPitch);
+                ISound wrapped = (ps instanceof ITickableSound)
+                    ? new WrappedTickableSound((ITickableSound) ps, finalVolume, finalPitch)
+                    : new WrappedSound(ps, finalVolume, finalPitch);
+                wrappedSounds.put(ps, wrapped);
                 super.playSound(wrapped);
             } else {
                 if (Config.debugMode)
@@ -386,14 +402,14 @@ public class HeavySwingSoundHandler extends SoundHandler {
 
         solidCount = Math.max(0, solidCount - 1);
 
-        return switch (solidCount) {
-            case 0 -> 1.00f;
-            case 1 -> 0.55f;
-            case 2 -> 0.35f;
-            case 3 -> 0.15f;
-            case 4 -> 0.05f;
-            default -> 0.00f;
-        };
+        switch (solidCount) {
+            case 0: return 1.00f;
+            case 1: return 0.55f;
+            case 2: return 0.35f;
+            case 3: return 0.15f;
+            case 4: return 0.05f;
+            default: return 0.00f;
+        }
     }
 
     private float getSubmergedVolumeFactor(PositionedSound ps) {
