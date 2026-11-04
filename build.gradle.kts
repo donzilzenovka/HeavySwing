@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "com.drzenovka.heavyswing"
-version = "1.0.3"
+version = "1.0.4"
 base { archivesName.set("HeavySwing") }
 java { toolchain.languageVersion.set(JavaLanguageVersion.of(8)) }
 minecraft {
