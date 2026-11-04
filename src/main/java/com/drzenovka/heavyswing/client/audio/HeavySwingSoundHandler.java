@@ -8,6 +8,7 @@ import java.util.Set;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.ISound;
+import net.minecraft.client.audio.ITickableSound;
 import net.minecraft.client.audio.PositionedSound;
 import net.minecraft.client.audio.SoundCategory;
 import net.minecraft.client.audio.SoundEventAccessorComposite;
@@ -52,6 +53,20 @@ public class HeavySwingSoundHandler extends SoundHandler {
     }
 
     private final Map<ISound, ISound> activeExternalSounds = new HashMap<>();
+    private final Map<ISound, ISound> wrappedSounds = new java.util.WeakHashMap<>();
+
+    @Override
+    public void stopSound(ISound sound) {
+        ISound wrapped = wrappedSounds.remove(sound);
+        super.stopSound(wrapped != null ? wrapped : sound);
+    }
+
+    @Override
+    public boolean isSoundPlaying(ISound sound) {
+        ISound wrapped = wrappedSounds.get(sound);
+        return super.isSoundPlaying(wrapped != null ? wrapped : sound);
+    }
+
 
     public void playExternalSound(ISound sound, float volume, float pitch) {
         if (activeExternalSounds.containsKey(sound)) return;
@@ -174,7 +189,7 @@ public class HeavySwingSoundHandler extends SoundHandler {
             if (sound instanceof PositionedSound ps) {
                 String name = ps.getPositionedSoundLocation()
                     .getResourcePath();
-                if (name.startsWith("step.") && HeavySwingHandler.isStepBlocked(name)) {
+                if (HeavySwingHandler.isStepBlocked(name)) {
                     if (HeavySwingHandler.isSwingActive()) {
                         if (Config.debugMode) HeavySwing.LOG.info("[HeavySwing] Sound filtering disabled.");
                         return; // block the sound
@@ -286,7 +301,10 @@ public class HeavySwingSoundHandler extends SoundHandler {
 
             if (!markUnplayable) {
                 // wrap the original sound with our custom volume/pitch (no reflection)
-                ISound wrapped = new WrappedSound(ps, finalVolume, finalPitch);
+                ISound wrapped = (ps instanceof ITickableSound)
+                    ? new WrappedTickableSound((ITickableSound) ps, finalVolume, finalPitch)
+                    : new WrappedSound(ps, finalVolume, finalPitch);
+                wrappedSounds.put(ps, wrapped);
                 super.playSound(wrapped);
             } else {
                 if (Config.debugMode)
