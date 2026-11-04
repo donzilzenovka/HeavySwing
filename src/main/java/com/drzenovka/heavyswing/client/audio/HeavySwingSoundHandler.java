@@ -186,7 +186,8 @@ public class HeavySwingSoundHandler extends SoundHandler {
         if (!Config.enableSoundFiltering) {
 
             // Preserve step-sound suppression
-            if (sound instanceof PositionedSound ps) {
+            if (sound instanceof PositionedSound) {
+                PositionedSound ps = (PositionedSound) sound;
                 String name = ps.getPositionedSoundLocation()
                     .getResourcePath();
                 if (HeavySwingHandler.isStepBlocked(name)) {
@@ -210,7 +211,8 @@ public class HeavySwingSoundHandler extends SoundHandler {
         boolean markUnplayable = false;
 
         // If we have player + a PositionedSound (positional), compute transforms
-        if (mc.thePlayer != null && sound instanceof PositionedSound ps) {
+        if (mc.thePlayer != null && sound instanceof PositionedSound) {
+            PositionedSound ps = (PositionedSound) sound;
 
             // record defaults
             float psDefaultVolume = safeGetVolume(ps);
@@ -404,14 +406,14 @@ public class HeavySwingSoundHandler extends SoundHandler {
 
         solidCount = Math.max(0, solidCount - 1);
 
-        return switch (solidCount) {
-            case 0 -> 1.00f;
-            case 1 -> 0.55f;
-            case 2 -> 0.35f;
-            case 3 -> 0.15f;
-            case 4 -> 0.05f;
-            default -> 0.00f;
-        };
+        switch (solidCount) {
+            case 0: return 1.00f;
+            case 1: return 0.55f;
+            case 2: return 0.35f;
+            case 3: return 0.15f;
+            case 4: return 0.05f;
+            default: return 0.00f;
+        }
     }
 
     private float getSubmergedVolumeFactor(PositionedSound ps) {
